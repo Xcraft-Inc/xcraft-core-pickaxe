@@ -1,0 +1,25 @@
+{
+  "name": "xcraft-core-pickaxe",
+  "version": "0.1.0",
+  "description": "Query builder",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xcraft-Inc/xcraft-core-pickaxe.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Xcraft-Inc/xcraft-core-pickaxe/issues"
+  },
+  "homepage": "https://github.com/Xcraft-Inc/xcraft-core-pickaxe#readme",
+  "devDependencies": {
+    "prettier": "2.0.4",
+    "xcraft-dev-prettier": "^2.0.0",
+    "xcraft-dev-rules": "^4.1.0"
+  },
+  "prettier": "xcraft-dev-prettier"
+}
