@@ -16,6 +16,9 @@
     "url": "https://github.com/Xcraft-Inc/xcraft-core-pickaxe/issues"
   },
   "homepage": "https://github.com/Xcraft-Inc/xcraft-core-pickaxe#readme",
+  "dependencies": {
+    "xcraft-core-stones": "^0.4.0"
+  },
   "devDependencies": {
     "prettier": "2.0.4",
     "xcraft-dev-prettier": "^2.0.0",
