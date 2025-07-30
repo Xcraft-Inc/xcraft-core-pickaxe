@@ -1,9 +1,18 @@
+// @ts-check
 'use strict';
 
 const {expect} = require('chai');
 const {queryToSql} = require('../lib/query-to-sql.js');
 const {QueryBuilder} = require('../lib/query-builder.js');
-const {string, number, array, record} = require('xcraft-core-stones');
+const {
+  string,
+  number,
+  array,
+  record,
+  enumeration,
+  Type,
+  StringType,
+} = require('xcraft-core-stones');
 
 /**
  * @param {string} sql
@@ -16,10 +25,28 @@ function trimSql(sql) {
     .replace(/ \)/g, ')');
 }
 
+/**
+ * @template {string} T
+ * @extends {StringType<`${T}@{string}`>}
+ */
+class TestIdType extends StringType {
+  /**
+   * @param {T} name
+   */
+  constructor(name) {
+    super(`${name}@string`);
+  }
+}
+
+/** @type {<const T extends string>(name: T) => Type<`${T}@${string}`>} */
+const id = (name) => new TestIdType(name);
+
 describe('xcraft.pickaxe', function () {
   class TestUserShape {
+    id = id('user');
     firstname = string;
     lastname = string;
+    role = enumeration('admin', 'user');
     age = number;
     mails = array(string);
     address = class {
@@ -107,10 +134,74 @@ describe('xcraft.pickaxe', function () {
         lastname IN (?,?) AND
         json_extract(address, '$.streetName') IS ?
       )
-      `;
+    `;
     const values = ['Toto', 42, 'user@toto', 'user@tata', 'Mine road'];
 
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
     expect(result.values).to.be.deep.equal(values);
+  });
+
+  it('pick string', function () {
+    const builder = new QueryBuilder()
+      .db('test_db')
+      .from('test_table', TestUserShape)
+      .field('id')
+      .where((user, $) =>
+        $.and(
+          user.field('firstname').substr(0, 2).length.lte(2),
+          // Test type derived of string
+          user.field('id').glob(`user@*`),
+          user.field('id').like(`user@*`),
+          // Test enumeration
+          user.field('role').substr(0, 2).length.lte(2)
+        )
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        id AS id
+      FROM test_table
+      WHERE (
+        LENGTH(SUBSTR(firstname, 0, 2)) <= 2 AND
+        id GLOB 'user@*' AND
+        id LIKE 'user@*' AND
+        LENGTH(SUBSTR(role, 0, 2)) <= 2
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
+  it('pick number', function () {
+    const builder = new QueryBuilder()
+      .db('test_db')
+      .from('test_table', TestUserShape)
+      .field('id')
+      .where((user, $) =>
+        $.and(
+          user.field('age').abs().gt(0),
+          user
+            .field('firstname')
+            .length.plus(user.field('lastname').length)
+            .plus(1)
+            .lte(20)
+        )
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        id AS id
+      FROM test_table
+      WHERE (
+        ABS(age) > 0 AND
+        ((LENGTH(firstname) + LENGTH(lastname)) + 1) <= 20
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
   });
 });
