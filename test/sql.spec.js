@@ -56,6 +56,11 @@ describe('xcraft.pickaxe', function () {
     skills = record(string, number);
   }
 
+  class TestNoteShape {
+    id = id('note');
+    text = string;
+  }
+
   it('query to sql', function () {
     const query = {
       db: 'test_db',
@@ -230,6 +235,41 @@ describe('xcraft.pickaxe', function () {
           FROM json_each(mails)
           WHERE json_each.value LIKE '%@example.com'
         )
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
+  it('join tables', function () {
+    const builder = new QueryBuilder()
+      .db('test_db')
+      .from('users', TestUserShape)
+      .leftJoin('notes', TestNoteShape, (user, note) =>
+        note
+          .field('id')
+          .substr(0, 'note@'.length + 1)
+          .eq(user.field('id'))
+      )
+      .select((user, note) => ({
+        id: user.field('id'),
+        noteText: note.field('text'),
+      }))
+      .where((user, note, $) =>
+        $.and(user.field('age').lt(10), note.field('text').length.gt(0))
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        users.id AS id,
+        notes.text AS noteText
+      FROM users
+      LEFT JOIN notes ON SUBSTR(notes.id, 0, 6) IS users.id
+      WHERE (
+        users.age < 10 AND
+        LENGTH(notes.text) > 0
       )
     `;
 
