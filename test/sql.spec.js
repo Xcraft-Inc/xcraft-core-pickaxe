@@ -125,8 +125,8 @@ describe('xcraft.pickaxe', function () {
 
     const sql = `
       SELECT
-        firstname AS firstname,
-        age AS age
+        firstname,
+        age
       FROM test_table
       WHERE (
         firstname IS ? AND
@@ -161,7 +161,7 @@ describe('xcraft.pickaxe', function () {
 
     const sql = `
       SELECT
-        id AS id
+        id
       FROM test_table
       WHERE (
         LENGTH(SUBSTR(firstname, 0, 2)) <= 2 AND
@@ -194,7 +194,7 @@ describe('xcraft.pickaxe', function () {
 
     const sql = `
       SELECT
-        id AS id
+        id
       FROM test_table
       WHERE (
         ABS(age) > 0 AND
