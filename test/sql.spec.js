@@ -204,4 +204,35 @@ describe('xcraft.pickaxe', function () {
 
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
   });
+
+  it('pick array', function () {
+    const builder = new QueryBuilder()
+      .db('test_db')
+      .from('test_table', TestUserShape)
+      .field('id')
+      .where((user, $) =>
+        $.and(
+          user.field('mails').length.gt(0),
+          user.field('mails').some((mail) => mail.like('%@example.com'))
+        )
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        id
+      FROM test_table
+      WHERE (
+        json_array_length(mails) > 0 AND
+        EXISTS (
+          SELECT *
+          FROM json_each(mails)
+          WHERE json_each.value LIKE '%@example.com'
+        )
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
 });
