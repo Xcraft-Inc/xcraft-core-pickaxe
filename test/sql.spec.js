@@ -124,7 +124,8 @@ describe('xcraft.pickaxe', function () {
           user.field('lastname').in(userIds),
           user.field('address').get('streetName').eq('Mine road')
         )
-      );
+      )
+      .orderBy((user) => [user.get('age'), user.get('firstname')]);
 
     const result = queryToSql(builder.query);
 
@@ -139,6 +140,7 @@ describe('xcraft.pickaxe', function () {
         lastname IN (?,?) AND
         json_extract(address, '$.streetName') IS ?
       )
+      ORDER BY age, firstname
     `;
     const values = ['Toto', 42, 'user@toto', 'user@tata', 'Mine road'];
 
