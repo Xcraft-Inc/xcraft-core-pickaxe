@@ -243,6 +243,36 @@ describe('xcraft.pickaxe', function () {
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
   });
 
+  it('pick record', function () {
+    const builder = new QueryBuilder()
+      .from('test_table', TestUserShape)
+      .field('id')
+      .where((user, $) =>
+        user
+          .field('skills')
+          .some((value, key) => $.or(value.eq(42), key.eq('test')))
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        id
+      FROM test_table
+      WHERE
+        EXISTS (
+          SELECT *
+          FROM json_each(skills)
+          WHERE (
+            json_each.value IS 42 OR
+            json_each.key IS 'test'
+          )
+        )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
   it('join tables', function () {
     const builder = new QueryBuilder()
       .db('test_db')
