@@ -63,7 +63,6 @@ describe('xcraft.pickaxe', function () {
 
   it('query to sql', function () {
     const query = {
-      db: 'test_db',
       from: 'test_table',
       scope: {
         operator: 'get',
@@ -114,7 +113,6 @@ describe('xcraft.pickaxe', function () {
   it('query builder', function () {
     const userIds = ['user@toto', 'user@tata'];
     const builder = new QueryBuilder()
-      .db('test_db')
       .from('test_table', TestUserShape)
       .fields(['firstname', 'age'])
       .where((user, $) =>
@@ -150,7 +148,6 @@ describe('xcraft.pickaxe', function () {
 
   it('pick string', function () {
     const builder = new QueryBuilder()
-      .db('test_db')
       .from('test_table', TestUserShape)
       .field('id')
       .where((user, $) =>
@@ -183,7 +180,6 @@ describe('xcraft.pickaxe', function () {
 
   it('pick number', function () {
     const builder = new QueryBuilder()
-      .db('test_db')
       .from('test_table', TestUserShape)
       .field('id')
       .where((user, $) =>
@@ -214,7 +210,6 @@ describe('xcraft.pickaxe', function () {
 
   it('pick array', function () {
     const builder = new QueryBuilder()
-      .db('test_db')
       .from('test_table', TestUserShape)
       .field('id')
       .where((user, $) =>
@@ -275,7 +270,6 @@ describe('xcraft.pickaxe', function () {
 
   it('join tables', function () {
     const builder = new QueryBuilder()
-      .db('test_db')
       .from('users', TestUserShape)
       .leftJoin('notes', TestNoteShape, (user, note) =>
         note
