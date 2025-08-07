@@ -353,7 +353,7 @@ describe('xcraft.pickaxe', function () {
         users.id AS id,
         notes.text AS noteText
       FROM users
-      LEFT JOIN notes ON SUBSTR(notes.id, 0, 6) IS users.id
+      LEFT JOIN notes ON SUBSTR(notes.id, 0, 6) = users.id
       WHERE (
         users.age < 10 AND
         LENGTH(notes.text) > 0
@@ -392,7 +392,7 @@ describe('xcraft.pickaxe', function () {
         u.id AS id,
         n.text AS noteText
       FROM users_db.users AS u
-      LEFT JOIN notes_db.notes AS n ON SUBSTR(n.id, 0, 6) IS u.id
+      LEFT JOIN notes_db.notes AS n ON SUBSTR(n.id, 0, 6) = u.id
       WHERE (
         u.age < 10 AND
         LENGTH(n.text) > 0
@@ -444,7 +444,7 @@ describe('xcraft.pickaxe', function () {
         json_extract(notes.action, '$.payload.state.text') AS noteText
       FROM action_table
       LEFT JOIN notes_db.action_table AS notes ON
-        SUBSTR(json_extract(notes.action, '$.payload.state.id'), 0, 6) IS json_extract(action, '$.payload.state.id')
+        SUBSTR(json_extract(notes.action, '$.payload.state.id'), 0, 6) = json_extract(action, '$.payload.state.id')
       WHERE (
         (entityType IS 'users' AND notes.entityType IS 'notes') AND
         json_extract(action, '$.payload.state.age') > 10
