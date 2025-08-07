@@ -3,7 +3,7 @@
 
 const {expect} = require('chai');
 const {queryToSql} = require('../lib/query-to-sql.js');
-const {QueryBuilder} = require('../lib/query-builder.js');
+const {QueryBuilder, FromQuery} = require('../lib/query-builder.js');
 const {
   string,
   number,
@@ -12,6 +12,10 @@ const {
   enumeration,
   Type,
   StringType,
+  object,
+  any,
+  value,
+  dateTime,
 } = require('xcraft-core-stones');
 
 /**
@@ -54,11 +58,68 @@ describe('xcraft.pickaxe', function () {
       townName = string;
     };
     skills = record(string, number);
+    tagIds = array(id('tag'));
   }
 
   class TestNoteShape {
     id = id('note');
     text = string;
+  }
+
+  class TestTagShape {
+    id = id('tag');
+    name = string;
+    color = string;
+  }
+
+  /**
+   * @template {AnyObjectShape} T
+   * @param {T} shape
+   */
+  function ActionShape(shape) {
+    return object({
+      entityType: string,
+      action: object({
+        meta: any,
+        payload: object({
+          state: shape,
+        }),
+        type: value('test'),
+      }),
+      timestamp: dateTime,
+    });
+  }
+
+  function getDb(entityType) {
+    return `${entityType}_db`;
+  }
+
+  /**
+   * @template {AnyObjectShape} T
+   * @param {string} tableName
+   * @param {T} shape
+   * @returns {FromQuery<[GetShape<T>]>}
+   */
+  function queryAction(tableName, shape) {
+    const builder = new QueryBuilder({
+      getTableSchema: (name, shape) => {
+        const db = getDb(name);
+        const isJoinedDb = name !== tableName; // or compare on db
+        if (isJoinedDb) {
+          console.log(`Attach ${name}`);
+        }
+        return QueryBuilder.TableSchema({
+          db: isJoinedDb ? db : undefined,
+          table: 'action_table',
+          alias: isJoinedDb ? name : undefined, // doesn't support multiple join on the same table
+          shape: shape,
+          baseShape: ActionShape(shape),
+          scope: (row) => row.field('action').get('payload').get('state'),
+          scopeCondition: (row) => row.field('entityType').eq(name),
+        });
+      },
+    });
+    return builder.from(tableName, shape);
   }
 
   it('query to sql', function () {
@@ -296,6 +357,97 @@ describe('xcraft.pickaxe', function () {
       WHERE (
         users.age < 10 AND
         LENGTH(notes.text) > 0
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
+  it('join different databases', function () {
+    const builder = new QueryBuilder({
+      schema: {
+        users: {db: 'users_db', table: 'users', alias: 'u'},
+        notes: {db: 'notes_db', table: 'notes', alias: 'n'},
+      },
+    })
+      .from('users', TestUserShape)
+      .leftJoin('notes', TestNoteShape, (user, note) =>
+        note
+          .field('id')
+          .substr(0, 'note@'.length + 1)
+          .eq(user.field('id'))
+      )
+      .select((user, note) => ({
+        id: user.field('id'),
+        noteText: note.field('text'),
+      }))
+      .where((user, note, $) =>
+        $.and(user.field('age').lt(10), note.field('text').length.gt(0))
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        u.id AS id,
+        n.text AS noteText
+      FROM users_db.users AS u
+      LEFT JOIN notes_db.notes AS n ON SUBSTR(n.id, 0, 6) IS u.id
+      WHERE (
+        u.age < 10 AND
+        LENGTH(n.text) > 0
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
+  it('query action', function () {
+    const builder = queryAction('users', TestUserShape)
+      .field('id')
+      .where((user, $) => user.get('age').gt(10));
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        json_extract(action, '$.payload.state.id') AS id
+      FROM action_table
+      WHERE (
+        entityType IS 'users' AND
+        json_extract(action, '$.payload.state.age') > 10
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
+  it('join query action', function () {
+    const builder = queryAction('users', TestUserShape)
+      .leftJoin('notes', TestNoteShape, (user, note) =>
+        note
+          .get('id')
+          .substr(0, 'note@'.length + 1)
+          .eq(user.get('id'))
+      )
+      .select((user, note) => ({
+        id: user.get('id'),
+        noteText: note.field('text'),
+      }))
+      .where((user, note, $) => user.get('age').gt(10));
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        json_extract(action, '$.payload.state.id') AS id,
+        json_extract(notes.action, '$.payload.state.text') AS noteText
+      FROM action_table
+      LEFT JOIN notes_db.action_table AS notes ON
+        SUBSTR(json_extract(notes.action, '$.payload.state.id'), 0, 6) IS json_extract(action, '$.payload.state.id')
+      WHERE (
+        (entityType IS 'users' AND notes.entityType IS 'notes') AND
+        json_extract(action, '$.payload.state.age') > 10
       )
     `;
 
