@@ -526,4 +526,51 @@ describe('xcraft.pickaxe', function () {
 
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
   });
+
+  it('with clause in query action', function () {
+    const builder = new QueryBuilder()
+      .with(
+        'admins',
+        new QueryBuilder()
+          .from('action_table', ActionShape(TestUserShape))
+          .selectAll()
+          .where((row, $) =>
+            $.and(
+              row.get('entityType').eq('users'),
+              row
+                .get('action')
+                .get('payload')
+                .get('state')
+                .get('role')
+                .eq('admin')
+            )
+          )
+      )
+      .from('admins', ActionShape(TestUserShape))
+      .select((row) => ({
+        id: row.get('action').get('payload').get('state').get('id'),
+      }))
+      .where((row) =>
+        row.get('action').get('payload').get('state').get('age').gt(10)
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      WITH admins AS (
+        SELECT *
+        FROM action_table
+        WHERE (
+          entityType IS 'users' AND
+          json_extract(action, '$.payload.state.role') IS 'admin'
+        )
+      )
+      SELECT
+        json_extract(action, '$.payload.state.id') AS id
+      FROM admins
+      WHERE json_extract(action, '$.payload.state.age') > 10
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
 });
