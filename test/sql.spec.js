@@ -101,10 +101,11 @@ describe('xcraft.pickaxe', function () {
    * @returns {FromQuery<[GetShape<T>]>}
    */
   function queryAction(tableName, shape) {
+    const mainDb = getDb(tableName);
     const builder = new QueryBuilder({
       getTableSchema: (name, shape) => {
         const db = getDb(name);
-        const isJoinedDb = name !== tableName; // or compare on db
+        const isJoinedDb = db !== mainDb;
         if (isJoinedDb) {
           console.log(`Attach ${name}`);
         }
