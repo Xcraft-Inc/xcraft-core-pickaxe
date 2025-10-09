@@ -495,4 +495,34 @@ describe('xcraft.pickaxe', function () {
 
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
   });
+
+  it('with clause', function () {
+    const builder = new QueryBuilder()
+      .with(
+        'admins',
+        new QueryBuilder()
+          .from('test_table', TestUserShape)
+          .selectAll()
+          .where((user) => user.field('role').eq('admin'))
+      )
+      .from('admins', TestUserShape)
+      .field('id')
+      .where((user) => user.field('age').gt(42));
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      WITH admins AS (
+        SELECT *
+        FROM test_table
+        WHERE role IS 'admin'
+      )
+      SELECT
+        id
+      FROM admins
+      WHERE age > 42
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
 });
