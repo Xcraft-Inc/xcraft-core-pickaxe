@@ -207,6 +207,23 @@ describe('xcraft.pickaxe', function () {
     expect(result.values).to.be.deep.equal(values);
   });
 
+  it('select all', function () {
+    const builder = new QueryBuilder()
+      .from('test_table', TestUserShape)
+      .selectAll()
+      .where((user, $) => user.field('role').eq('admin'));
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT *
+      FROM test_table
+      WHERE role IS 'admin'
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
   it('pick string', function () {
     const builder = new QueryBuilder()
       .from('test_table', TestUserShape)
@@ -412,6 +429,31 @@ describe('xcraft.pickaxe', function () {
     const sql = `
       SELECT
         json_extract(action, '$.payload.state.id') AS id
+      FROM action_table
+      WHERE (
+        entityType IS 'users' AND
+        json_extract(action, '$.payload.state.age') > 10
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
+  it('select all in query action', function () {
+    const builder = queryAction('users', TestUserShape)
+      .selectAll()
+      .where((user) => user.get('age').gt(10));
+
+    const result = queryToSql(builder.query, null);
+
+    const keys = Object.keys(new TestUserShape());
+    const sql = `
+      SELECT
+        ${keys
+          .map(
+            (key) => `json_extract(action, '$.payload.state.${key}') AS ${key}`
+          )
+          .join(', ')}
       FROM action_table
       WHERE (
         entityType IS 'users' AND
