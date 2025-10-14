@@ -483,14 +483,14 @@ describe('xcraft.pickaxe', function () {
 
     const sql = `
       SELECT
-        json_extract(action, '$.payload.state.id') AS id,
+        json_extract(action_table.action, '$.payload.state.id') AS id,
         json_extract(notes.action, '$.payload.state.text') AS noteText
       FROM action_table
       LEFT JOIN notes_db.action_table AS notes ON
-        SUBSTR(json_extract(notes.action, '$.payload.state.id'), 0, 6) = json_extract(action, '$.payload.state.id')
+        SUBSTR(json_extract(notes.action, '$.payload.state.id'), 0, 6) = json_extract(action_table.action, '$.payload.state.id')
       WHERE (
-        (entityType IS 'users' AND notes.entityType IS 'notes') AND
-        json_extract(action, '$.payload.state.age') > 10
+        (action_table.entityType IS 'users' AND notes.entityType IS 'notes') AND
+        json_extract(action_table.action, '$.payload.state.age') > 10
       )
     `;
 
