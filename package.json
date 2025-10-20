@@ -1,6 +1,6 @@
 {
   "name": "xcraft-core-pickaxe",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "description": "Query builder",
   "main": "index.js",
   "scripts": {
