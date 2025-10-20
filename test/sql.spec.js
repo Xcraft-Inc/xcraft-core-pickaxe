@@ -225,6 +225,23 @@ describe('xcraft.pickaxe', function () {
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
   });
 
+  it('includes unsafe sql', function () {
+    const builder = new QueryBuilder()
+      .from('test_table', TestUserShape)
+      .selectAll()
+      .where((user, $) => $.unsafeSql(`role IS 'admin'`));
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT *
+      FROM test_table
+      WHERE role IS 'admin'
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
   it('pick string', function () {
     const builder = new QueryBuilder()
       .from('test_table', TestUserShape)
