@@ -378,7 +378,10 @@ describe('xcraft.pickaxe', function () {
         noteText: note.field('text'),
       }))
       .where((user, note, $) =>
-        $.and(user.field('age').lt(10), note.field('text').length.gt(0))
+        $.and(
+          user.field('age').lt(10),
+          note.field('text').isNullOr((note) => note.length.gt(0))
+        )
       );
 
     const result = queryToSql(builder.query, null);
@@ -391,7 +394,7 @@ describe('xcraft.pickaxe', function () {
       LEFT JOIN notes ON SUBSTR(notes.id, 0, 6) = users.id
       WHERE (
         users.age < 10 AND
-        LENGTH(notes.text) > 0
+        (notes.text IS NULL OR LENGTH(notes.text) > 0)
       )
     `;
 
@@ -417,7 +420,10 @@ describe('xcraft.pickaxe', function () {
         noteText: note.field('text'),
       }))
       .where((user, note, $) =>
-        $.and(user.field('age').lt(10), note.field('text').length.gt(0))
+        $.and(
+          user.field('age').lt(10),
+          note.field('text').isNullOr((note) => note.length.gt(0))
+        )
       );
 
     const result = queryToSql(builder.query, null);
@@ -430,7 +436,7 @@ describe('xcraft.pickaxe', function () {
       LEFT JOIN notes_db.notes AS n ON SUBSTR(n.id, 0, 6) = u.id
       WHERE (
         u.age < 10 AND
-        LENGTH(n.text) > 0
+        (n.text IS NULL OR LENGTH(n.text) > 0)
       )
     `;
 
