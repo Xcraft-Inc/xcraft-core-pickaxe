@@ -16,6 +16,7 @@ const {
   any,
   value,
   dateTime,
+  option,
 } = require('xcraft-core-stones');
 
 /**
@@ -58,6 +59,7 @@ describe('xcraft.pickaxe', function () {
       townName = string;
     };
     skills = record(string, number);
+    mainTagId = option(id('tag'));
     tagIds = array(id('tag'));
   }
 
@@ -298,6 +300,28 @@ describe('xcraft.pickaxe', function () {
       WHERE (
         ABS(age) > 0 AND
         ((LENGTH(firstname) + LENGTH(lastname)) + 1) <= 20
+      )
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
+  it('pick option', function () {
+    const builder = new QueryBuilder()
+      .from('test_table', TestUserShape)
+      .field('id')
+      .where((user, $) =>
+        user.field('mainTagId').isNullOr((mainTagId) => mainTagId.like(`tag@*`))
+      );
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        id
+      FROM test_table
+      WHERE (
+        mainTagId IS NULL OR mainTagId LIKE 'tag@*'
       )
     `;
 
