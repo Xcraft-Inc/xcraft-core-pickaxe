@@ -388,6 +388,29 @@ describe('xcraft.pickaxe', function () {
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
   });
 
+  it('reuse selected value', function () {
+    const builder = new QueryBuilder()
+      .from('test_table', TestUserShape)
+      .select((user, $) => ({
+        id: user.get('id'),
+        fullname: user.get('firstname').concat(user.get('lastname')),
+      }))
+      .where((user, $, fields) => fields.get('fullname').length.gt(10));
+
+    const result = queryToSql(builder.query, null);
+
+    const sql = `
+      SELECT
+        id,
+        (firstname || lastname) AS fullname
+      FROM test_table
+      WHERE
+        LENGTH(fullname) > 10
+    `;
+
+    expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
+  });
+
   it('join tables', function () {
     const builder = new QueryBuilder()
       .from('users', TestUserShape)
