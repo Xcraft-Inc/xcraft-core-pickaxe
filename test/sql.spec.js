@@ -394,18 +394,34 @@ describe('xcraft.pickaxe', function () {
       .select((user, $) => ({
         id: user.get('id'),
         fullname: user.get('firstname').concat(user.get('lastname')),
+        kind: $.case(
+          [user.get('age').lt(13), 'kid'],
+          [user.get('age').lt(18), 'teenager'],
+          [user.get('age').lt(65), 'adult'],
+          'elder'
+        ),
       }))
-      .where((user, $, fields) => fields.get('fullname').length.gt(10));
+      .where((user, $, fields) =>
+        $.or(fields.get('fullname').length.gt(10), fields.get('kind').eq('kid'))
+      );
 
     const result = queryToSql(builder.query, null);
 
     const sql = `
       SELECT
         id,
-        (firstname || lastname) AS fullname
+        (firstname || lastname) AS fullname,
+        CASE
+          WHEN age < 13 THEN 'kid'
+          WHEN age < 18 THEN 'teenager'
+          WHEN age < 65 THEN 'adult'
+          ELSE 'elder'
+        END AS kind
       FROM test_table
-      WHERE
-        LENGTH(fullname) > 10
+      WHERE (
+        LENGTH(fullname) > 10 OR
+        kind IS 'kid'
+      )
     `;
 
     expect(trimSql(result.sql)).to.be.equal(trimSql(sql));
