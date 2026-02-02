@@ -412,9 +412,9 @@ describe('xcraft.pickaxe', function () {
         id,
         (firstname || lastname) AS fullname,
         CASE
-          WHEN age < 13 THEN 'kid'
-          WHEN age < 18 THEN 'teenager'
-          WHEN age < 65 THEN 'adult'
+          WHEN (age < 13) THEN 'kid'
+          WHEN (age < 18) THEN 'teenager'
+          WHEN (age < 65) THEN 'adult'
           ELSE 'elder'
         END AS kind
       FROM test_table
